@@ -16,6 +16,23 @@ const key = (value) =>
     .replace(/[^a-z0-9]+/g, "_")
     .replace(/^_+|_+$/g, "");
 
+const normalizeTitle = (value) => key(value).replace(/_/g, " ").trim();
+
+const titleSimilarity = (a, b) => {
+  if (!a || !b) return 0;
+  if (a === b) return 1;
+  if (a.includes(b) || b.includes(a)) return 0.92;
+  const tokensA = new Set(a.split(" ").filter(Boolean));
+  const tokensB = new Set(b.split(" ").filter(Boolean));
+  if (!tokensA.size || !tokensB.size) return 0;
+  let intersection = 0;
+  tokensA.forEach((token) => {
+    if (tokensB.has(token)) intersection += 1;
+  });
+  const union = tokensA.size + tokensB.size - intersection;
+  return union ? intersection / union : 0;
+};
+
 const preferredKeys = (obj, keys) => {
   for (const raw of keys) {
     const target = key(raw);
@@ -226,16 +243,43 @@ const getGroupSummary = (group) => {
   );
 };
 
-const getActionsForEvent = (eventId, eventActionsMap, actionTypesMap) => {
-  const actions = eventActionsMap.get(eventId) || [];
-  return actions.map((ea) => {
-    const actionType = actionTypesMap.get(ea.action_type_id) || {};
-    return {
-      ...ea,
+const getActionsForEvent = (
+  eventId,
+  eventTitle,
+  eventActions,
+  eventActionsMap,
+  actionTypesMap
+) => {
+  const matches = [];
+  const seen = new Set();
+  const addAction = (action) => {
+    const unique =
+      preferredKeys(action, ["event_action_id", "id"]) ||
+      `${action.action_type_id || ""}::${action.action_description || ""}`;
+    if (seen.has(unique)) return;
+    seen.add(unique);
+    const actionType = actionTypesMap.get(action.action_type_id) || {};
+    matches.push({
+      ...action,
       actionTypeName: actionType.action_type || "",
       actionTypeDescription: actionType.description || "",
-    };
-  });
+    });
+  };
+
+  if (eventId) {
+    (eventActionsMap.get(eventId) || []).forEach(addAction);
+  }
+
+  const eventTitleKey = normalizeTitle(eventTitle);
+  if (eventTitleKey) {
+    eventActions.forEach((action) => {
+      if (!action._titleKey) return;
+      const score = titleSimilarity(eventTitleKey, action._titleKey);
+      if (score >= 0.6) addAction(action);
+    });
+  }
+
+  return matches;
 };
 
 const getMediaForEvent = (event, media) => {
@@ -434,6 +478,8 @@ const buildEventSection = (
 
     const actionsForEvent = getActionsForEvent(
       eventId,
+      eventTitle,
+      eventActionsMap._all || [],
       eventActionsMap,
       actionTypesMap
     );
@@ -574,6 +620,12 @@ const init = async () => {
 
   const groupsById = mapBy(groups, ["group_id", "id", "groupid"]);
   const eventActionsMap = groupBy(eventActions, ["event_id", "eventid"]);
+  eventActions.forEach((action) => {
+    action._titleKey = normalizeTitle(
+      preferredKeys(action, ["event_title", "event_name", "title", "event"])
+    );
+  });
+  eventActionsMap._all = eventActions;
   const actionTypesMap = mapBy(actionTypes, ["action_type_id"]);
 
   const timelineMode = document.body.dataset.timeline || "upcoming";
