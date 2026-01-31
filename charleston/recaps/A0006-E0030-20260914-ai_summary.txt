@@ -1,0 +1,9 @@
+GROUP_ID: A0006
+GROUP_NAME: Charleston County Planning Commission
+EVENT_ID: E0030
+EVENT_DATE: 2026-09-14
+SOURCE_URL: https://engage.charlestoncounty.org/h1086
+GENERATED_ON: 2026-01-31T16:09:06.773032Z
+
+AI_SUMMARY:
+Planning Commission Engagement Portal - PublicInput Skip Navigation Skip to main content Engage Charleston County Planning Commission Engagement Portal Menu User settings menu Sign In Create Account Translate Planning Commission Engagement Portal Planning Commission Engagement Portal Welcome to the Planning Commission Engagement Portal! About the Planning Commission Engagement Portal: We developed this site in an effort to provide more access and opportunity for the public to engage in cases that affect their communities.&nbsp; Below&nbsp;you can provide your comments about cases that are currently under review by the Planning Commission.&nbsp; You can also participate via text or email.&nbsp;&nbsp; Let&rsquo;s get started.&nbsp; Scroll down to submit your comments on individual&nbsp;cases by clicking the &quot;Participate&quot; button.&nbsp; NOTE: You must register for an account to submit comments.&nbsp; It&#39;s quick and easy!&nbsp;&nbsp; Click here for instructions . &nbsp; If a case is closed for comments, the comments have been included in the meeting packet posted below. Thank you for taking the time to provide your input!

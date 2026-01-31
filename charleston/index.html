@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Charleston County Actions Timeline</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="app">
+      <header class="app-header">
+        <div class="header-copy">
+          <p class="eyebrow">Charleston County Actions</p>
+          <h1>Public actions, gatherings, and outcomes - in time order.</h1>
+          <p class="lede">
+            Scroll to move one event at a time. Each stop shows the group behind
+            the event, the public actions available, and for past events, the
+            media and summaries captured afterward.
+          </p>
+        </div>
+        <div class="legend">
+          <span class="legend-dot"></span>
+          <span>Timeline</span>
+        </div>
+      </header>
+
+      <section id="timeline" class="timeline" aria-live="polite">
+        <div class="loading" id="loading">Loading timeline data...</div>
+      </section>
+
+      <footer class="app-footer">
+        <p>
+          Data sources: <code>events.csv</code>, <code>groups.csv</code>,
+          <code>actions.csv</code>, <code>media.csv</code>, and
+          <code>recaps/</code>.
+        </p>
+      </footer>
+    </main>
+
+    <script src="app.js" defer></script>
+  </body>
+</html>

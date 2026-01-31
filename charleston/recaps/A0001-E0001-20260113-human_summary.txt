@@ -1,0 +1,15 @@
+HUMAN SUMMARY TEMPLATE
+
+Use this filename format for human-written recaps:
+<group_id>-<event_id>-<yyyymmdd>-human_summary.txt
+
+Example: A0001-E0001-20260113-human_summary.txt
+
+Instructions:
+- Write a concise summary of what happened in the meeting.
+- Cite agenda items, votes, and public comment highlights if available.
+- Include links or references at the end if you have sources.
+- Submit via pull request so the summary can be reviewed and merged.
+
+SUMMARY:
+[Replace this section with your recap]

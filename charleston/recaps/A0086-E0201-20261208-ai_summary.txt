@@ -1,0 +1,9 @@
+GROUP_ID: A0086
+GROUP_NAME: Committee on Ways and Means
+EVENT_ID: E0201
+EVENT_DATE: 2026-12-08
+SOURCE_URL: https://www.charleston-sc.gov/DocumentCenter/View/3734/City-of-Charleston-2026-Boards-and-Commissions-Meeting-Schedule
+GENERATED_ON: 2026-01-31T16:09:50.306429Z
+
+AI_SUMMARY:
+No extractable text from the linked notice.

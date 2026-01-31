@@ -1,0 +1,9 @@
+GROUP_ID: A0001
+GROUP_NAME: City of Charleston City Council
+EVENT_ID: E0020
+EVENT_DATE: 2026-12-01
+SOURCE_URL: https://www.charleston-sc.gov/DocumentCenter/View/8627/City-of-Charleston-City-Council-Meetings-for-2026
+GENERATED_ON: 2026-01-31T16:09:03.568077Z
+
+AI_SUMMARY:
+CITY OF CHARLESTON COUNCIL MEETINGS FOR 2026 80 BROAD STREET, CITY COUNCIL CHAMBER CHARLESTON, SC 29401 CITY COUNCIL MEETING DAY 5:00 P.M. January 13, 2026 January 27, 2026 February 10, 2026 February 24, 2026 March 10, 2026 March 24, 2026 April 14, 2026 April 28, 2026 May 12, 2026 May 26, 2026 June 16, 2026 July 14, 2026 August 18, 2026 September 8, 2026 September 22, 2026 October 13, 2026 October 27, 2026 November 10, 2026 November 17, 2026 December 1, 2026 December 15, 2026 All meeting dates, locations, and times are subject to change. In accordance with the Americans with Disabilities Act, people who need alternative formats, ASL (American Sign Language) Interpretation or other accommodation please contact Janet Schumacher at (843) 577-1389 or email schumacherj@charleston-sc.gov three business days prior to the meeting.

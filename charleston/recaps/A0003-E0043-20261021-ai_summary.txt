@@ -1,0 +1,9 @@
+GROUP_ID: A0003
+GROUP_NAME: City of Charleston Planning Commission
+EVENT_ID: E0043
+EVENT_DATE: 2026-10-21
+SOURCE_URL: https://www.charleston-sc.gov/173/Planning-Commission-PC
+GENERATED_ON: 2026-01-31T16:09:10.656577Z
+
+AI_SUMMARY:
+Planning Commission (PC) | Charleston, SC - Official Website Skip to Main Content Create a Website Account - Manage notification subscriptions, save form progress and more. &nbsp;&nbsp; Website Sign In News Government Departments Business Online Services Visitors Projects How Do I... Search Government Departments Planning, Preservation & Sustainability Popular Topics Boards & Committees Planning Commission (PC) Planning Commission (PC) BOARD MEETINGS 5:00 p.m. 3rd Wednesday of every month 2 George Street First Floor, Public Meeting Room 1403 Charleston, SC 29401 AGENDA AGENDA PACKETS &nbsp; with application information YOUTUBE - Meetings are live streamed and video recordings are posted to YouTube &nbsp; PUBLIC PARTICIPATION UPDATE Speak in person at the meeting without signing up in advance.&nbsp; Written comments must be submitted by 12:00 p.m.&nbsp; the business day before &nbsp;the meeting and must be submitted at http://innovate.charleston-sc.gov/comments/ .
