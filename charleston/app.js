@@ -1,10 +1,13 @@
 const DATA_FILES = {
   events: "events.csv",
   groups: "groups.csv",
-  eventActions: "event_actions.csv",
+  eventActions: "rss_actions.csv",
   actionTypes: "action_types.csv",
   media: "media.csv",
 };
+
+const RSS_URL =
+  "https://www.charleston-sc.gov/RSSFeed.aspx?ModID=58&CID=All-calendar.xml";
 
 const timeline = document.getElementById("timeline");
 const loading = document.getElementById("loading");
@@ -17,21 +20,6 @@ const key = (value) =>
     .replace(/^_+|_+$/g, "");
 
 const normalizeTitle = (value) => key(value).replace(/_/g, " ").trim();
-
-const titleSimilarity = (a, b) => {
-  if (!a || !b) return 0;
-  if (a === b) return 1;
-  if (a.includes(b) || b.includes(a)) return 0.92;
-  const tokensA = new Set(a.split(" ").filter(Boolean));
-  const tokensB = new Set(b.split(" ").filter(Boolean));
-  if (!tokensA.size || !tokensB.size) return 0;
-  let intersection = 0;
-  tokensA.forEach((token) => {
-    if (tokensB.has(token)) intersection += 1;
-  });
-  const union = tokensA.size + tokensB.size - intersection;
-  return union ? intersection / union : 0;
-};
 
 const preferredKeys = (obj, keys) => {
   for (const raw of keys) {
@@ -110,7 +98,10 @@ const fetchCSV = async (path) => {
 
 const parseTime = (time) => {
   if (!time) return "";
-  const cleaned = time.trim();
+  let cleaned = time.trim();
+  if (cleaned.includes("-")) {
+    cleaned = cleaned.split("-")[0].trim();
+  }
   if (/^\d{1,2}:\d{2}$/.test(cleaned)) {
     return cleaned;
   }
@@ -127,6 +118,13 @@ const parseTime = (time) => {
 const parseDate = (date) => {
   if (!date) return "";
   const cleaned = date.trim();
+  const parsed = new Date(cleaned);
+  if (!Number.isNaN(parsed.getTime())) {
+    const year = parsed.getFullYear();
+    const month = `${parsed.getMonth() + 1}`.padStart(2, "0");
+    const day = `${parsed.getDate()}`.padStart(2, "0");
+    return `${year}-${month}-${day}`;
+  }
   if (/^\d{8}$/.test(cleaned)) {
     return `${cleaned.slice(0, 4)}-${cleaned.slice(4, 6)}-${cleaned.slice(6, 8)}`;
   }
@@ -213,6 +211,18 @@ const groupBy = (rows, keys) => {
   return map;
 };
 
+const groupByTitle = (rows, keys) => {
+  const map = new Map();
+  rows.forEach((row) => {
+    const title = preferredKeys(row, keys);
+    const normalized = normalizeTitle(title);
+    if (!normalized) return;
+    if (!map.has(normalized)) map.set(normalized, []);
+    map.get(normalized).push(row);
+  });
+  return map;
+};
+
 const getAddress = (event) => {
   const address = preferredKeys(event, ["address"]);
   if (address && address !== "Virtual/Remote" && address !== "TBD - Check agenda") {
@@ -246,8 +256,8 @@ const getGroupSummary = (group) => {
 const getActionsForEvent = (
   eventId,
   eventTitle,
-  eventActions,
   eventActionsMap,
+  eventActionsByTitle,
   actionTypesMap
 ) => {
   const matches = [];
@@ -271,12 +281,8 @@ const getActionsForEvent = (
   }
 
   const eventTitleKey = normalizeTitle(eventTitle);
-  if (eventTitleKey) {
-    eventActions.forEach((action) => {
-      if (!action._titleKey) return;
-      const score = titleSimilarity(eventTitleKey, action._titleKey);
-      if (score >= 0.6) addAction(action);
-    });
+  if (eventTitleKey && eventActionsByTitle.has(eventTitleKey)) {
+    eventActionsByTitle.get(eventTitleKey).forEach(addAction);
   }
 
   return matches;
@@ -362,6 +368,103 @@ const buildMapsEmbed = (address) => {
   iframe.referrerPolicy = "no-referrer-when-downgrade";
   iframe.allowFullscreen = true;
   return iframe;
+};
+
+const stripHtml = (value) => value.replace(/<[^>]*>/g, "");
+
+const parseRssDescription = (description) => {
+  if (!description) return { date: "", time: "", location: "" };
+  const normalized = description
+    .replace(/<br\s*\/?>/gi, "\n")
+    .replace(/<\/?strong>/gi, "");
+  const text = stripHtml(normalized);
+  const lines = text
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean);
+  let dateText = "";
+  let timeText = "";
+  const locationLines = [];
+  let captureLocation = false;
+  lines.forEach((line) => {
+    const lower = line.toLowerCase();
+    if (lower.startsWith("event date:")) {
+      dateText = line.split(":").slice(1).join(":").trim();
+      captureLocation = false;
+      return;
+    }
+    if (lower.startsWith("event time:")) {
+      timeText = line.split(":").slice(1).join(":").trim();
+      captureLocation = false;
+      return;
+    }
+    if (lower.startsWith("location:")) {
+      const location = line.split(":").slice(1).join(":").trim();
+      if (location) locationLines.push(location);
+      captureLocation = true;
+      return;
+    }
+    if (captureLocation) {
+      locationLines.push(line);
+    }
+  });
+  return {
+    date: dateText,
+    time: timeText,
+    location: locationLines.join(", "),
+  };
+};
+
+const normalizeLocation = (value) => {
+  if (!value) return "";
+  return value.replace(/\s+/g, " ").replace(/,?Charleston,?/, " Charleston").trim();
+};
+
+const fetchRssEvents = async () => {
+  try {
+    const response = await fetch(RSS_URL, { cache: "no-store" });
+    if (!response.ok) throw new Error("RSS fetch failed");
+    const text = await response.text();
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(text, "text/xml");
+    const items = Array.from(doc.querySelectorAll("channel > item"));
+    const ns = "https://www.charleston-sc.gov/Calendar.aspx";
+    return items.map((item) => {
+      const title = (item.querySelector("title")?.textContent || "").trim();
+      const link = (item.querySelector("link")?.textContent || "").trim();
+      const desc = item.querySelector("description")?.textContent || "";
+      const dateNode = item.getElementsByTagNameNS(ns, "EventDates")[0];
+      const timeNode = item.getElementsByTagNameNS(ns, "EventTimes")[0];
+      const locationNode = item.getElementsByTagNameNS(ns, "Location")[0];
+      const parsed = parseRssDescription(desc);
+      const date = parseDate(dateNode?.textContent || parsed.date);
+      const time = parseTime(timeNode?.textContent || parsed.time);
+      const location = normalizeLocation(
+        parsed.location || locationNode?.textContent || ""
+      );
+      const eventIdMatch =
+        link.match(/EID=(\d+)/) || desc.match(/EID=(\d+)/);
+      const eventId = eventIdMatch ? `RSS-${eventIdMatch[1]}` : "";
+
+      return {
+        event_id: eventId,
+        group_id: "RSS",
+        body_name: "City of Charleston Calendar",
+        event_type: title || "Event",
+        jurisdiction: "City of Charleston",
+        date,
+        time,
+        location,
+        address: location,
+        basis: "City calendar RSS feed",
+        source_url: link,
+        notes: "Generated from Charleston calendar RSS feed",
+      };
+    });
+  } catch (error) {
+    console.warn(error);
+    return [];
+  }
 };
 
 const buildEventSection = (
@@ -479,8 +582,8 @@ const buildEventSection = (
     const actionsForEvent = getActionsForEvent(
       eventId,
       eventTitle,
-      eventActionsMap._all || [],
       eventActionsMap,
+      eventActionsByTitle,
       actionTypesMap
     );
 
@@ -605,8 +708,9 @@ const observeSections = (sections) => {
 };
 
 const init = async () => {
+  const useRss = document.body.dataset.events === "rss";
   const [events, groups, eventActions, actionTypes, media] = await Promise.all([
-    fetchCSV(DATA_FILES.events),
+    useRss ? fetchRssEvents() : fetchCSV(DATA_FILES.events),
     fetchCSV(DATA_FILES.groups),
     fetchCSV(DATA_FILES.eventActions),
     fetchCSV(DATA_FILES.actionTypes),
@@ -614,18 +718,20 @@ const init = async () => {
   ]);
 
   if (!events.length) {
-    loading.textContent = "No events found. Add data to events.csv.";
+    loading.textContent = useRss
+      ? "No events found in the RSS feed."
+      : "No events found. Add data to events.csv.";
     return;
   }
 
   const groupsById = mapBy(groups, ["group_id", "id", "groupid"]);
   const eventActionsMap = groupBy(eventActions, ["event_id", "eventid"]);
-  eventActions.forEach((action) => {
-    action._titleKey = normalizeTitle(
-      preferredKeys(action, ["event_title", "event_name", "title", "event"])
-    );
-  });
-  eventActionsMap._all = eventActions;
+  const eventActionsByTitle = groupByTitle(eventActions, [
+    "event_title",
+    "event_name",
+    "title",
+    "event",
+  ]);
   const actionTypesMap = mapBy(actionTypes, ["action_type_id"]);
 
   const timelineMode = document.body.dataset.timeline || "upcoming";
