@@ -535,77 +535,6 @@ const observeSections = (sections) => {
   sections.forEach((section) => observer.observe(section));
 };
 
-const snapScroll = (sections) => {
-  let locked = false;
-  const prefersReduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-
-  const getClosestIndex = () => {
-    const viewportCenter = timeline.scrollTop + timeline.clientHeight / 2;
-    let closestIndex = 0;
-    let closestDistance = Infinity;
-    sections.forEach((section, index) => {
-      const sectionCenter = section.offsetTop + section.offsetHeight / 2;
-      const distance = Math.abs(sectionCenter - viewportCenter);
-      if (distance < closestDistance) {
-        closestDistance = distance;
-        closestIndex = index;
-      }
-    });
-    return closestIndex;
-  };
-
-  const scrollToIndex = (index, behaviorOverride = "") => {
-    if (!sections.length) return 0;
-    const clamped = Math.min(Math.max(index, 0), sections.length - 1);
-    const behavior =
-      behaviorOverride || (prefersReduced ? "auto" : "smooth");
-    timeline.scrollTo({ top: sections[clamped].offsetTop, behavior });
-    return clamped;
-  };
-
-  const scrollBy = (direction, behaviorOverride = "") => {
-    const currentIndex = getClosestIndex();
-    const nextIndex = Math.min(
-      Math.max(currentIndex + direction, 0),
-      sections.length - 1
-    );
-    return scrollToIndex(nextIndex, behaviorOverride);
-  };
-
-  const shouldAllowNestedScroll = (target, direction) => {
-    const nested = target.closest(".past-scroll");
-    if (!nested) return false;
-    const maxScroll = nested.scrollHeight - nested.clientHeight;
-    if (maxScroll <= 1) return false;
-    const atTop = nested.scrollTop <= 0;
-    const atBottom = nested.scrollTop >= maxScroll - 1;
-    if ((direction < 0 && !atTop) || (direction > 0 && !atBottom)) {
-      return true;
-    }
-    return false;
-  };
-
-  timeline.addEventListener(
-    "wheel",
-    (event) => {
-      if (window.innerWidth < 1000) return;
-      if (locked) return;
-      const direction = Math.sign(event.deltaY);
-      if (direction === 0) return;
-      if (shouldAllowNestedScroll(event.target, direction)) return;
-      event.preventDefault();
-      locked = true;
-      scrollBy(direction);
-      setTimeout(() => {
-        locked = false;
-      }, 650);
-    },
-    { passive: false }
-  );
-
-  return { scrollToIndex, scrollBy, getClosestIndex };
-};
-
 const init = async () => {
   const [events, groups, eventActions, actionTypes, media] = await Promise.all([
     fetchCSV(DATA_FILES.events),
@@ -629,7 +558,7 @@ const init = async () => {
 
   const filteredEvents = events.filter((event) => {
     const date = parseDateTime(event);
-    if (Number.isNaN(date.getTime())) return timelineMode !== "past";
+    if (Number.isNaN(date.getTime())) return false;
     if (timelineMode === "past") return date.getTime() < now.getTime();
     if (timelineMode === "upcoming") return date.getTime() >= now.getTime();
     return true;
@@ -671,45 +600,7 @@ const init = async () => {
 
   sections.forEach((section) => timeline.appendChild(section));
   observeSections(sections);
-
-  const { scrollToIndex, scrollBy, getClosestIndex } = snapScroll(sections);
-
-  const prevBtn = document.getElementById("nav-prev");
-  const nextBtn = document.getElementById("nav-next");
-
-  const updateNav = () => {
-    if (!prevBtn || !nextBtn) return;
-    const currentIndex = getClosestIndex();
-    prevBtn.disabled = currentIndex <= 0;
-    nextBtn.disabled = currentIndex >= sections.length - 1;
-  };
-
-  if (prevBtn) {
-    prevBtn.addEventListener("click", () => {
-      scrollBy(-1);
-    });
-  }
-
-  if (nextBtn) {
-    nextBtn.addEventListener("click", () => {
-      scrollBy(1);
-    });
-  }
-
-  timeline.addEventListener(
-    "scroll",
-    () => {
-      window.requestAnimationFrame(updateNav);
-    },
-    { passive: true }
-  );
-
-  const targetIndex = 0;
-
-  requestAnimationFrame(() => {
-    scrollToIndex(targetIndex, "auto");
-    updateNav();
-  });
+  timeline.scrollTop = 0;
 };
 
 init();
