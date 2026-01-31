@@ -108,14 +108,23 @@ h1 {
   position: relative;
 }
 
-.welcome,
-.groups-section {
-  padding: 0 clamp(16px, 3vw, 64px);
+.home-grid {
+  display: grid;
+  grid-template-columns: minmax(260px, 1fr) minmax(280px, 1.1fr);
+  gap: clamp(18px, 3vw, 40px);
+  padding: 24px clamp(16px, 3vw, 64px) 40px;
+  align-items: start;
 }
 
-.welcome {
-  margin-top: 12px;
-  margin-bottom: 32px;
+.home-left {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.home-right {
+  display: flex;
+  flex-direction: column;
 }
 
 .welcome-card h2,
@@ -179,6 +188,28 @@ h1 {
 .group-card h3 {
   margin: 0 0 8px;
   font-size: 1.05rem;
+}
+
+.group-home-link {
+  color: var(--ink);
+  text-decoration: none;
+}
+
+.group-home-link:hover {
+  text-decoration: underline;
+}
+
+.group-site-link {
+  display: inline-flex;
+  margin-top: 10px;
+  color: var(--accent);
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 0.85rem;
+}
+
+.group-site-link:hover {
+  text-decoration: underline;
 }
 
 .nav-arrow {
@@ -519,6 +550,10 @@ h1 {
   .section-head {
     flex-direction: column;
     align-items: flex-start;
+  }
+
+  .home-grid {
+    grid-template-columns: 1fr;
   }
 
   .nav-arrow {

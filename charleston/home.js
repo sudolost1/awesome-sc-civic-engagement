@@ -109,6 +109,7 @@ const renderGroups = (groups) => {
     card.className = "card group-card";
     const name =
       preferredKeys(group, ["name", "group", "title"]) || "Group";
+    const url = preferredKeys(group, ["url", "website", "homepage", "site"]);
     const summary = preferredKeys(group, [
       "summary_text",
       "summary",
@@ -117,11 +118,33 @@ const renderGroups = (groups) => {
       "mission",
     ]);
 
-    card.innerHTML = `<h3>${name}</h3>`;
+    const title = document.createElement("h3");
+    if (url) {
+      const link = document.createElement("a");
+      link.href = url;
+      link.target = "_blank";
+      link.rel = "noopener";
+      link.className = "group-home-link";
+      link.textContent = name;
+      title.appendChild(link);
+    } else {
+      title.textContent = name;
+    }
+    card.appendChild(title);
     const para = document.createElement("p");
     para.className = summary ? "" : "empty-state";
     para.textContent = summary || "No summary available.";
     card.appendChild(para);
+
+    if (url) {
+      const siteLink = document.createElement("a");
+      siteLink.href = url;
+      siteLink.target = "_blank";
+      siteLink.rel = "noopener";
+      siteLink.className = "group-site-link";
+      siteLink.textContent = "Visit website";
+      card.appendChild(siteLink);
+    }
     fragment.appendChild(card);
   });
 
