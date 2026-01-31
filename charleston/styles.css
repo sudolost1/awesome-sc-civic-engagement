@@ -31,12 +31,8 @@ body[data-page="home"] {
   overflow: auto;
 }
 
-body[data-page="timeline"] .app {
-  height: 100vh;
-}
-
-body[data-page="home"] .app {
-  height: auto;
+body[data-page="timeline"] {
+  overflow: auto;
 }
 
 .app {
@@ -113,6 +109,12 @@ h1 {
   padding: 0 clamp(16px, 3vw, 64px);
   position: relative;
   min-height: 0;
+}
+
+body[data-page="timeline"] .timeline {
+  flex: 0 0 auto;
+  overflow: visible;
+  min-height: auto;
 }
 
 .home-grid {

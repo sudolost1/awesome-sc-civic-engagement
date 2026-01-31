@@ -333,6 +333,12 @@ const buildEventSection = (
   const eventId = preferredKeys(event, ["event_id", "id", "eventid"]);
   const location = getLocation(event);
   const address = getAddress(event);
+  const eventSourceUrl = preferredKeys(event, [
+    "source_url",
+    "event_source_url",
+    "source_link",
+    "source",
+  ]);
   const safeDate = Number.isNaN(date.getTime())
     ? new Date(8640000000000000)
     : date;
@@ -366,6 +372,17 @@ const buildEventSection = (
   summaryP.textContent = getGroupSummary(group);
   groupCard.appendChild(summaryP);
 
+  const addSourceLink = (container) => {
+    if (!eventSourceUrl) return;
+    const sourceBtn = document.createElement("a");
+    sourceBtn.href = eventSourceUrl;
+    sourceBtn.target = "_blank";
+    sourceBtn.rel = "noopener";
+    sourceBtn.className = "directions-btn source-btn";
+    sourceBtn.textContent = "Event Source";
+    container.appendChild(sourceBtn);
+  };
+
   // Maps widget
   if (address) {
     const mapsWidget = document.createElement("div");
@@ -379,8 +396,14 @@ const buildEventSection = (
     directionsBtn.className = "directions-btn";
     directionsBtn.textContent = "Get Directions";
     mapsWidget.appendChild(directionsBtn);
+    addSourceLink(mapsWidget);
 
     groupCard.appendChild(mapsWidget);
+  } else if (eventSourceUrl) {
+    const sourceWrap = document.createElement("div");
+    sourceWrap.className = "maps-widget";
+    addSourceLink(sourceWrap);
+    groupCard.appendChild(sourceWrap);
   }
 
   left.appendChild(groupCard);
