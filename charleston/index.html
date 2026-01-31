@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Charleston County Actions Timeline</title>
+    <title>Charleston County Actions</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -12,7 +12,7 @@
     />
     <link rel="stylesheet" href="styles.css" />
   </head>
-  <body>
+  <body data-page="home">
     <main class="app">
       <header class="app-header">
         <div class="header-copy">
@@ -30,8 +30,29 @@
         </div>
       </header>
 
-      <section id="timeline" class="timeline" aria-live="polite">
-        <div class="loading" id="loading">Loading timeline data...</div>
+      <section class="welcome">
+        <div class="welcome-card card">
+          <h2>Welcome</h2>
+          <p class="lede">
+            This site catalogs public actions in Charleston County. Choose a
+            timeline to explore upcoming events or browse past events in reverse
+            chronological order.
+          </p>
+          <div class="welcome-links">
+            <a class="primary-link" href="upcoming.html">Upcoming events timeline</a>
+            <a class="secondary-link" href="past.html">Past events timeline</a>
+          </div>
+        </div>
+      </section>
+
+      <section class="groups-section">
+        <div class="section-head">
+          <h2>Groups tracked</h2>
+          <p class="lede">All organizations currently represented in the data.</p>
+        </div>
+        <div id="group-list" class="group-list">
+          <div class="loading" id="loading">Loading groups...</div>
+        </div>
       </section>
 
       <footer class="app-footer">
@@ -43,6 +64,6 @@
       </footer>
     </main>
 
-    <script src="app.js" defer></script>
+    <script src="home.js" defer></script>
   </body>
 </html>

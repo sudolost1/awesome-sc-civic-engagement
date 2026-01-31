@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Upcoming Events | Charleston County Actions</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body data-page="timeline" data-timeline="upcoming">
+    <main class="app">
+      <header class="app-header">
+        <div class="header-copy">
+          <p class="eyebrow">Charleston County Actions</p>
+          <h1>Upcoming events timeline</h1>
+          <p class="lede">
+            Scroll down to move forward in time. Each stop shows the group behind
+            the event and the public actions available.
+          </p>
+          <a class="back-link" href="index.html">Back to welcome</a>
+        </div>
+        <div class="legend">
+          <span class="legend-dot"></span>
+          <span>Timeline</span>
+        </div>
+      </header>
+
+      <section id="timeline" class="timeline" aria-live="polite">
+        <div class="loading" id="loading">Loading timeline data...</div>
+      </section>
+
+      <button class="nav-arrow nav-arrow--up" id="nav-prev" aria-label="Previous event">
+        <span aria-hidden="true">&uarr;</span>
+      </button>
+      <button class="nav-arrow nav-arrow--down" id="nav-next" aria-label="Next event">
+        <span aria-hidden="true">&darr;</span>
+      </button>
+
+      <footer class="app-footer">
+        <p>
+          Data sources: <code>events.csv</code>, <code>groups.csv</code>,
+          <code>event_actions.csv</code>, <code>action_types.csv</code>,
+          <code>media.csv</code>, and <code>recaps/</code>.
+        </p>
+      </footer>
+    </main>
+
+    <script src="app.js" defer></script>
+  </body>
+</html>

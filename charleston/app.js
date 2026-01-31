@@ -196,11 +196,6 @@ const groupBy = (rows, keys) => {
   return map;
 };
 
-const isPastEvent = (date) => {
-  if (!(date instanceof Date) || Number.isNaN(date.getTime())) return false;
-  return date.getTime() < Date.now();
-};
-
 const getAddress = (event) => {
   const address = preferredKeys(event, ["address"]);
   if (address && address !== "Virtual/Remote" && address !== "TBD - Check agenda") {
@@ -325,9 +320,15 @@ const buildMapsEmbed = (address) => {
   return iframe;
 };
 
-const buildEventSection = (event, group, eventActionsMap, actionTypesMap, media) => {
+const buildEventSection = (
+  event,
+  group,
+  eventActionsMap,
+  actionTypesMap,
+  media,
+  options = {}
+) => {
   const date = parseDateTime(event);
-  const past = isPastEvent(date);
   const eventTitle = getEventTitle(event);
   const eventId = preferredKeys(event, ["event_id", "id", "eventid"]);
   const location = getLocation(event);
@@ -395,84 +396,86 @@ const buildEventSection = (event, group, eventActionsMap, actionTypesMap, media)
 
   // RIGHT SIDE - Actions for this event
   const right = document.createElement("div");
-  right.className = `event-right ${past ? "past" : ""}`;
+  right.className = "event-right";
 
-  const actionsCard = document.createElement("div");
-  actionsCard.className = "card";
-  actionsCard.innerHTML = `<h3>What You Can Do</h3>`;
+  const showSummaries = options.mode === "past";
+  const showActions = !showSummaries;
 
-  const actionList = document.createElement("div");
-  actionList.className = "actions-list";
+  if (showActions) {
+    const actionsCard = document.createElement("div");
+    actionsCard.className = "card";
+    actionsCard.innerHTML = `<h3>What You Can Do</h3>`;
 
-  const actionsForEvent = getActionsForEvent(eventId, eventActionsMap, actionTypesMap);
+    const actionList = document.createElement("div");
+    actionList.className = "actions-list";
 
-  if (actionsForEvent.length) {
-    // Group actions by action_type_id to collect multiple sources
-    const actionsByType = new Map();
-    actionsForEvent.forEach((action) => {
-      const typeId = action.action_type_id;
-      if (!actionsByType.has(typeId)) {
-        actionsByType.set(typeId, {
-          description: action.action_description || action.actionTypeDescription,
-          sources: [],
-        });
-      }
-      if (action.source_url) {
-        actionsByType.get(typeId).sources.push({
-          url: action.source_url,
-          citation: action.source_citation || "Source",
-        });
-      }
-    });
+    const actionsForEvent = getActionsForEvent(
+      eventId,
+      eventActionsMap,
+      actionTypesMap
+    );
 
-    actionsByType.forEach((actionData, typeId) => {
-      const item = document.createElement("div");
-      item.className = "action-item";
+    if (actionsForEvent.length) {
+      // Group actions by action_type_id to collect multiple sources
+      const actionsByType = new Map();
+      actionsForEvent.forEach((action) => {
+        const typeId = action.action_type_id;
+        if (!actionsByType.has(typeId)) {
+          actionsByType.set(typeId, {
+            description: action.action_description || action.actionTypeDescription,
+            sources: [],
+          });
+        }
+        if (action.source_url) {
+          actionsByType.get(typeId).sources.push({
+            url: action.source_url,
+            citation: action.source_citation || "Source",
+          });
+        }
+      });
 
-      const descSpan = document.createElement("span");
-      descSpan.className = "action-description";
-      descSpan.textContent = actionData.description;
-      item.appendChild(descSpan);
+      actionsByType.forEach((actionData) => {
+        const item = document.createElement("div");
+        item.className = "action-item";
 
-      if (actionData.sources.length) {
-        const sourcesSpan = document.createElement("span");
-        sourcesSpan.className = "action-sources";
-        actionData.sources.forEach((source, idx) => {
-          const link = document.createElement("a");
-          link.href = source.url;
-          link.target = "_blank";
-          link.rel = "noopener";
-          link.className = "source-link";
-          link.textContent = `[${idx + 1}]`;
-          link.title = source.citation;
-          sourcesSpan.appendChild(link);
-        });
-        item.appendChild(sourcesSpan);
-      }
+        const descSpan = document.createElement("span");
+        descSpan.className = "action-description";
+        descSpan.textContent = actionData.description;
+        item.appendChild(descSpan);
 
-      actionList.appendChild(item);
-    });
-  } else {
-    const empty = document.createElement("div");
-    empty.className = "empty-state";
-    empty.textContent = "No public actions listed for this event.";
-    actionList.appendChild(empty);
+        if (actionData.sources.length) {
+          const sourcesSpan = document.createElement("span");
+          sourcesSpan.className = "action-sources";
+          actionData.sources.forEach((source, idx) => {
+            const link = document.createElement("a");
+            link.href = source.url;
+            link.target = "_blank";
+            link.rel = "noopener";
+            link.className = "source-link";
+            link.textContent = `[${idx + 1}]`;
+            link.title = source.citation;
+            sourcesSpan.appendChild(link);
+          });
+          item.appendChild(sourcesSpan);
+        }
+
+        actionList.appendChild(item);
+      });
+    } else {
+      const empty = document.createElement("div");
+      empty.className = "empty-state";
+      empty.textContent = "No public actions listed for this event.";
+      actionList.appendChild(empty);
+    }
+
+    actionsCard.appendChild(actionList);
+    right.appendChild(actionsCard);
   }
 
-  actionsCard.appendChild(actionList);
-  right.appendChild(actionsCard);
-
-  // PAST EVENT - Media and summaries
-  if (past) {
-    const bottom = document.createElement("div");
-    bottom.className = "past-bottom";
-
-    const scrollArea = document.createElement("div");
-    scrollArea.className = "past-scroll";
-
-    const mediaWrap = document.createElement("div");
-    mediaWrap.className = "media-list";
-    mediaWrap.dataset.loaded = "false";
+  if (showSummaries) {
+    const summaryCard = document.createElement("div");
+    summaryCard.className = "card summary-card";
+    summaryCard.innerHTML = "<h3>Event Summary</h3>";
 
     const humanSummary = document.createElement("div");
     humanSummary.className = "summary-block";
@@ -482,47 +485,11 @@ const buildEventSection = (event, group, eventActionsMap, actionTypesMap, media)
     aiSummary.className = "summary-block";
     aiSummary.innerHTML = "<h4>AI summary</h4><p class=\"empty-state\">Loading...</p>";
 
-    scrollArea.appendChild(mediaWrap);
-    scrollArea.appendChild(humanSummary);
-    scrollArea.appendChild(aiSummary);
+    summaryCard.appendChild(humanSummary);
+    summaryCard.appendChild(aiSummary);
+    right.appendChild(summaryCard);
 
-    bottom.appendChild(scrollArea);
-    right.appendChild(bottom);
-
-    const loadPastContent = async () => {
-      if (mediaWrap.dataset.loaded === "true") return;
-      mediaWrap.dataset.loaded = "true";
-      mediaWrap.innerHTML = "";
-
-      const mediaItems = getMediaForEvent(event, media);
-      if (mediaItems.length === 0) {
-        const empty = document.createElement("div");
-        empty.className = "empty-state";
-        empty.textContent = "No media listed for this event.";
-        mediaWrap.appendChild(empty);
-      } else {
-        mediaItems.forEach((item) => {
-          const mediaCard = document.createElement("div");
-          mediaCard.className = "media-item";
-          const title = preferredKeys(item, ["title", "name", "caption"]) || "Media";
-          const url = preferredKeys(item, ["media_link", "url", "link", "media_url", "video_url"]);
-          mediaCard.innerHTML = `<h4>${title}</h4>`;
-          const embed = buildEmbed(url);
-          if (embed) {
-            mediaCard.appendChild(embed);
-          }
-          if (url) {
-            const link = document.createElement("a");
-            link.href = url;
-            link.target = "_blank";
-            link.rel = "noopener";
-            link.textContent = "Open source";
-            mediaCard.appendChild(link);
-          }
-          mediaWrap.appendChild(mediaCard);
-        });
-      }
-
+    const loadSummaries = async () => {
       const recapPaths = buildRecapPaths(event);
       if (recapPaths) {
         const [humanText, aiText] = await Promise.all([
@@ -541,7 +508,7 @@ const buildEventSection = (event, group, eventActionsMap, actionTypesMap, media)
       }
     };
 
-    section.addEventListener("section-visible", loadPastContent);
+    section.addEventListener("section-visible", loadSummaries);
   }
 
   section.appendChild(left);
@@ -572,30 +539,63 @@ const snapScroll = (sections) => {
   let locked = false;
   const prefersReduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-  const scrollToIndex = (index) => {
-    if (!sections[index]) return;
-    const behavior = prefersReduced ? "auto" : "smooth";
-    sections[index].scrollIntoView({ behavior, block: "start" });
+  const getClosestIndex = () => {
+    const viewportCenter = timeline.scrollTop + timeline.clientHeight / 2;
+    let closestIndex = 0;
+    let closestDistance = Infinity;
+    sections.forEach((section, index) => {
+      const sectionCenter = section.offsetTop + section.offsetHeight / 2;
+      const distance = Math.abs(sectionCenter - viewportCenter);
+      if (distance < closestDistance) {
+        closestDistance = distance;
+        closestIndex = index;
+      }
+    });
+    return closestIndex;
   };
 
-  window.addEventListener(
+  const scrollToIndex = (index, behaviorOverride = "") => {
+    if (!sections.length) return 0;
+    const clamped = Math.min(Math.max(index, 0), sections.length - 1);
+    const behavior =
+      behaviorOverride || (prefersReduced ? "auto" : "smooth");
+    timeline.scrollTo({ top: sections[clamped].offsetTop, behavior });
+    return clamped;
+  };
+
+  const scrollBy = (direction, behaviorOverride = "") => {
+    const currentIndex = getClosestIndex();
+    const nextIndex = Math.min(
+      Math.max(currentIndex + direction, 0),
+      sections.length - 1
+    );
+    return scrollToIndex(nextIndex, behaviorOverride);
+  };
+
+  const shouldAllowNestedScroll = (target, direction) => {
+    const nested = target.closest(".past-scroll");
+    if (!nested) return false;
+    const maxScroll = nested.scrollHeight - nested.clientHeight;
+    if (maxScroll <= 1) return false;
+    const atTop = nested.scrollTop <= 0;
+    const atBottom = nested.scrollTop >= maxScroll - 1;
+    if ((direction < 0 && !atTop) || (direction > 0 && !atBottom)) {
+      return true;
+    }
+    return false;
+  };
+
+  timeline.addEventListener(
     "wheel",
     (event) => {
       if (window.innerWidth < 1000) return;
       if (locked) return;
       const direction = Math.sign(event.deltaY);
       if (direction === 0) return;
+      if (shouldAllowNestedScroll(event.target, direction)) return;
       event.preventDefault();
       locked = true;
-      const current = sections.findIndex((section) =>
-        section.classList.contains("is-active")
-      );
-      const currentIndex = current === -1 ? 0 : current;
-      const nextIndex = Math.min(
-        Math.max(currentIndex + direction, 0),
-        sections.length - 1
-      );
-      scrollToIndex(nextIndex);
+      scrollBy(direction);
       setTimeout(() => {
         locked = false;
       }, 650);
@@ -603,7 +603,7 @@ const snapScroll = (sections) => {
     { passive: false }
   );
 
-  return scrollToIndex;
+  return { scrollToIndex, scrollBy, getClosestIndex };
 };
 
 const init = async () => {
@@ -624,7 +624,26 @@ const init = async () => {
   const eventActionsMap = groupBy(eventActions, ["event_id", "eventid"]);
   const actionTypesMap = mapBy(actionTypes, ["action_type_id"]);
 
-  const sortedEvents = events
+  const timelineMode = document.body.dataset.timeline || "upcoming";
+  const now = new Date();
+
+  const filteredEvents = events.filter((event) => {
+    const date = parseDateTime(event);
+    if (Number.isNaN(date.getTime())) return timelineMode !== "past";
+    if (timelineMode === "past") return date.getTime() < now.getTime();
+    if (timelineMode === "upcoming") return date.getTime() >= now.getTime();
+    return true;
+  });
+
+  if (!filteredEvents.length) {
+    loading.textContent =
+      timelineMode === "past"
+        ? "No past events found yet."
+        : "No upcoming events found yet.";
+    return;
+  }
+
+  const sortedEvents = filteredEvents
     .map((event) => ({
       ...event,
       _date: parseDateTime(event),
@@ -636,6 +655,7 @@ const init = async () => {
       const timeB = Number.isNaN(b._date.getTime())
         ? Number.MAX_SAFE_INTEGER
         : b._date.getTime();
+      if (timelineMode === "past") return timeB - timeA;
       return timeA - timeB;
     });
 
@@ -644,22 +664,52 @@ const init = async () => {
   const sections = sortedEvents.map((event) => {
     const groupId = preferredKeys(event, ["group_id", "groupid"]);
     const group = groupId ? groupsById.get(groupId) : null;
-    return buildEventSection(event, group, eventActionsMap, actionTypesMap, media);
+    return buildEventSection(event, group, eventActionsMap, actionTypesMap, media, {
+      mode: timelineMode,
+    });
   });
 
   sections.forEach((section) => timeline.appendChild(section));
   observeSections(sections);
 
-  const scrollToIndex = snapScroll(sections);
+  const { scrollToIndex, scrollBy, getClosestIndex } = snapScroll(sections);
 
-  const now = new Date();
-  let targetIndex = sections.findIndex((section) => {
-    const date = new Date(section.dataset.datetime);
-    return date.getTime() >= now.getTime();
+  const prevBtn = document.getElementById("nav-prev");
+  const nextBtn = document.getElementById("nav-next");
+
+  const updateNav = () => {
+    if (!prevBtn || !nextBtn) return;
+    const currentIndex = getClosestIndex();
+    prevBtn.disabled = currentIndex <= 0;
+    nextBtn.disabled = currentIndex >= sections.length - 1;
+  };
+
+  if (prevBtn) {
+    prevBtn.addEventListener("click", () => {
+      scrollBy(-1);
+    });
+  }
+
+  if (nextBtn) {
+    nextBtn.addEventListener("click", () => {
+      scrollBy(1);
+    });
+  }
+
+  timeline.addEventListener(
+    "scroll",
+    () => {
+      window.requestAnimationFrame(updateNav);
+    },
+    { passive: true }
+  );
+
+  const targetIndex = 0;
+
+  requestAnimationFrame(() => {
+    scrollToIndex(targetIndex, "auto");
+    updateNav();
   });
-  if (targetIndex === -1) targetIndex = sections.length - 1;
-
-  requestAnimationFrame(() => scrollToIndex(targetIndex));
 };
 
 init();
