@@ -168,24 +168,71 @@ h1 {
   transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
 
-.event-meta {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  text-align: center;
-  min-width: 180px;
+.event-tagline {
+  background: rgba(193, 77, 42, 0.08);
+  border-radius: 12px;
+  padding: 12px 14px;
+  margin: 8px 0 12px;
 }
 
-.event-date {
-  font-size: 1.2rem;
+.event-title {
+  font-size: 1rem;
   font-weight: 600;
+  color: var(--ink);
+  margin-bottom: 4px;
 }
 
-.event-time,
+.event-datetime {
+  font-size: 0.9rem;
+  color: var(--accent);
+  font-weight: 500;
+}
+
 .event-location {
-  font-size: 0.95rem;
+  font-size: 0.85rem;
   color: var(--muted);
+  margin-top: 2px;
+}
+
+.group-summary {
+  font-size: 0.9rem;
+  line-height: 1.5;
+  color: var(--muted);
+  margin: 0 0 12px;
+}
+
+.maps-widget {
+  margin-top: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.maps-embed {
+  width: 100%;
+  height: 160px;
+  border: none;
+  border-radius: 12px;
+  background: var(--bg-strong);
+}
+
+.directions-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  background: var(--accent);
+  color: #fff;
+  padding: 10px 16px;
+  border-radius: 999px;
+  text-decoration: none;
+  font-size: 0.9rem;
+  font-weight: 500;
+  transition: opacity 0.2s ease;
+}
+
+.directions-btn:hover {
+  opacity: 0.85;
 }
 
 .actions-list,
@@ -194,12 +241,38 @@ h1 {
   gap: 10px;
 }
 
-.action-chip {
+.action-item {
   background: #fff;
-  padding: 8px 12px;
-  border-radius: 999px;
+  padding: 12px 14px;
+  border-radius: 12px;
   border: 1px solid var(--panel-border);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 6px;
+}
+
+.action-description {
   font-size: 0.9rem;
+  color: var(--ink);
+  line-height: 1.4;
+}
+
+.action-sources {
+  display: inline-flex;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.source-link {
+  color: var(--accent);
+  text-decoration: none;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.source-link:hover {
+  text-decoration: underline;
 }
 
 .event-right.past {

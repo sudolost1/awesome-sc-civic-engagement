@@ -1,0 +1,11 @@
+action_type_id,action_type,description,default_source_url,default_source_citation
+AT001,attend_meeting,Attend a public meeting in person,https://www.scstatehouse.gov/code/t30c004.php,SC Code § 30-4-60
+AT002,view_agenda,View meeting agenda (posted 24 hours in advance),https://www.scstatehouse.gov/code/t30c004.php,SC Code § 30-4-80
+AT003,request_minutes,Request meeting minutes as public record,https://www.scstatehouse.gov/code/t30c004.php,SC Code § 30-4-90
+AT004,public_comment_oral,Speak during public comment period,https://www.scstatehouse.gov/code/t30c004.php,Body rules/agenda
+AT005,public_comment_written,Submit written public comment,https://www.scstatehouse.gov/code/t30c004.php,Body rules/agenda
+AT006,foia_request,Submit FOIA request for records,https://www.scstatehouse.gov/code/t30c004.php,SC Code § 30-4-30
+AT007,sign_up_to_speak,Register to speak via portal or sign-up sheet,https://www.scstatehouse.gov/code/t30c004.php,Body rules
+AT008,apply_for_appointment,Apply for appointment to board/commission,https://www.scstatehouse.gov/code/t30c004.php,Enabling ordinance
+AT009,file_appeal,File an appeal with appeals board,https://www.scstatehouse.gov/code/t30c004.php,Enabling ordinance
+AT010,submit_case_comment,Comment on a specific case/application before the body,https://www.scstatehouse.gov/code/t30c004.php,Body rules

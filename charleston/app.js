@@ -1,7 +1,8 @@
 const DATA_FILES = {
   events: "events.csv",
   groups: "groups.csv",
-  actions: "actions.csv",
+  eventActions: "event_actions.csv",
+  actionTypes: "action_types.csv",
   media: "media.csv",
 };
 
@@ -183,14 +184,36 @@ const mapBy = (rows, keys) => {
   return map;
 };
 
+const groupBy = (rows, keys) => {
+  const map = new Map();
+  rows.forEach((row) => {
+    const id = preferredKeys(row, keys);
+    if (id) {
+      if (!map.has(id)) map.set(id, []);
+      map.get(id).push(row);
+    }
+  });
+  return map;
+};
+
 const isPastEvent = (date) => {
   if (!(date instanceof Date) || Number.isNaN(date.getTime())) return false;
   return date.getTime() < Date.now();
 };
 
+const getAddress = (event) => {
+  const address = preferredKeys(event, ["address"]);
+  if (address && address !== "Virtual/Remote" && address !== "TBD - Check agenda") {
+    return address;
+  }
+  return "";
+};
+
 const getLocation = (event) => {
-  const direct = preferredKeys(event, ["location", "venue", "address"]);
+  const direct = preferredKeys(event, ["location", "venue"]);
   if (direct) return direct;
+  const address = getAddress(event);
+  if (address) return address;
   const city = preferredKeys(event, ["city"]);
   const state = preferredKeys(event, ["state"]);
   const place = [city, state].filter(Boolean).join(", ");
@@ -198,37 +221,26 @@ const getLocation = (event) => {
 };
 
 const getEventTitle = (event) =>
-  preferredKeys(event, ["title", "name", "event_name"]) || "Event";
+  preferredKeys(event, ["event_type", "title", "name", "event_name"]) || "Event";
 
 const getGroupSummary = (group) => {
   if (!group) return "No group summary available.";
   return (
-    preferredKeys(group, ["summary", "description", "about", "mission"]) ||
+    preferredKeys(group, ["summary_text", "summary", "description", "about", "mission"]) ||
     "No group summary available."
   );
 };
 
-const getActionLabel = (action) =>
-  preferredKeys(action, ["action", "title", "name", "description"]) ||
-  "Public action";
-
-const getActionsForEvent = (event, actions) => {
-  const eventId = preferredKeys(event, ["event_id", "id", "eventid"]);
-  const groupId = preferredKeys(event, ["group_id", "groupid"]);
-  const type = preferredKeys(event, ["type", "event_type", "category"]);
-
-  const filtered = actions.filter((action) => {
-    const actionEventId = preferredKeys(action, ["event_id", "eventid"]);
-    const actionGroupId = preferredKeys(action, ["group_id", "groupid"]);
-    const actionType = preferredKeys(action, ["event_type", "type", "category"]);
-
-    if (actionEventId && eventId && actionEventId === eventId) return true;
-    if (actionGroupId && groupId && actionGroupId === groupId) return true;
-    if (actionType && type && actionType === type) return true;
-    return false;
+const getActionsForEvent = (eventId, eventActionsMap, actionTypesMap) => {
+  const actions = eventActionsMap.get(eventId) || [];
+  return actions.map((ea) => {
+    const actionType = actionTypesMap.get(ea.action_type_id) || {};
+    return {
+      ...ea,
+      actionTypeName: actionType.action_type || "",
+      actionTypeDescription: actionType.description || "",
+    };
   });
-
-  return filtered.length ? filtered : actions;
 };
 
 const getMediaForEvent = (event, media) => {
@@ -299,11 +311,27 @@ const buildRecapPaths = (event) => {
   };
 };
 
-const buildEventSection = (event, group, actions, media) => {
+const buildGoogleMapsUrl = (address) => {
+  return `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(address)}`;
+};
+
+const buildMapsEmbed = (address) => {
+  const iframe = document.createElement("iframe");
+  iframe.className = "maps-embed";
+  iframe.src = `https://www.google.com/maps?q=${encodeURIComponent(address)}&output=embed`;
+  iframe.loading = "lazy";
+  iframe.referrerPolicy = "no-referrer-when-downgrade";
+  iframe.allowFullscreen = true;
+  return iframe;
+};
+
+const buildEventSection = (event, group, eventActionsMap, actionTypesMap, media) => {
   const date = parseDateTime(event);
   const past = isPastEvent(date);
   const eventTitle = getEventTitle(event);
+  const eventId = preferredKeys(event, ["event_id", "id", "eventid"]);
   const location = getLocation(event);
+  const address = getAddress(event);
   const safeDate = Number.isNaN(date.getTime())
     ? new Date(8640000000000000)
     : date;
@@ -312,58 +340,129 @@ const buildEventSection = (event, group, actions, media) => {
   section.className = "event-section";
   section.dataset.datetime = safeDate.toISOString();
 
+  // LEFT SIDE - Group info + Event tagline + Map
   const left = document.createElement("div");
   left.className = "event-left";
 
   const groupCard = document.createElement("div");
   groupCard.className = "card";
   const groupName = preferredKeys(group || {}, ["name", "group", "title"]) || "Group";
-  groupCard.innerHTML = `<h3>${groupName}</h3><p>${getGroupSummary(group)}</p>`;
+
+  // Event tagline (name, date, time)
+  const tagline = document.createElement("div");
+  tagline.className = "event-tagline";
+  tagline.innerHTML = `
+    <div class="event-title">${eventTitle}</div>
+    <div class="event-datetime">${formatDate(date)} at ${formatTime(date)}</div>
+    <div class="event-location">${location}</div>
+  `;
+
+  groupCard.innerHTML = `<h3>${groupName}</h3>`;
+  groupCard.appendChild(tagline);
+
+  const summaryP = document.createElement("p");
+  summaryP.className = "group-summary";
+  summaryP.textContent = getGroupSummary(group);
+  groupCard.appendChild(summaryP);
+
+  // Maps widget
+  if (address) {
+    const mapsWidget = document.createElement("div");
+    mapsWidget.className = "maps-widget";
+    mapsWidget.appendChild(buildMapsEmbed(address));
+
+    const directionsBtn = document.createElement("a");
+    directionsBtn.href = buildGoogleMapsUrl(address);
+    directionsBtn.target = "_blank";
+    directionsBtn.rel = "noopener";
+    directionsBtn.className = "directions-btn";
+    directionsBtn.textContent = "Get Directions";
+    mapsWidget.appendChild(directionsBtn);
+
+    groupCard.appendChild(mapsWidget);
+  }
+
   left.appendChild(groupCard);
 
+  // CENTER - Timeline dot
   const center = document.createElement("div");
   center.className = "event-center";
 
   const dot = document.createElement("div");
   dot.className = "event-dot";
 
-  const meta = document.createElement("div");
-  meta.className = "event-meta";
-  meta.innerHTML = `
-    <div class="event-date">${formatDate(date)}</div>
-    <div class="event-time">${formatTime(date)}</div>
-    <div class="event-location">${location}</div>
-  `;
-
   center.appendChild(dot);
-  center.appendChild(meta);
 
+  // RIGHT SIDE - Actions for this event
   const right = document.createElement("div");
   right.className = `event-right ${past ? "past" : ""}`;
 
   const actionsCard = document.createElement("div");
   actionsCard.className = "card";
+  actionsCard.innerHTML = `<h3>What You Can Do</h3>`;
+
   const actionList = document.createElement("div");
   actionList.className = "actions-list";
-  const actionsForEvent = getActionsForEvent(event, actions);
+
+  const actionsForEvent = getActionsForEvent(eventId, eventActionsMap, actionTypesMap);
+
   if (actionsForEvent.length) {
+    // Group actions by action_type_id to collect multiple sources
+    const actionsByType = new Map();
     actionsForEvent.forEach((action) => {
+      const typeId = action.action_type_id;
+      if (!actionsByType.has(typeId)) {
+        actionsByType.set(typeId, {
+          description: action.action_description || action.actionTypeDescription,
+          sources: [],
+        });
+      }
+      if (action.source_url) {
+        actionsByType.get(typeId).sources.push({
+          url: action.source_url,
+          citation: action.source_citation || "Source",
+        });
+      }
+    });
+
+    actionsByType.forEach((actionData, typeId) => {
       const item = document.createElement("div");
-      item.className = "action-chip";
-      item.textContent = getActionLabel(action);
+      item.className = "action-item";
+
+      const descSpan = document.createElement("span");
+      descSpan.className = "action-description";
+      descSpan.textContent = actionData.description;
+      item.appendChild(descSpan);
+
+      if (actionData.sources.length) {
+        const sourcesSpan = document.createElement("span");
+        sourcesSpan.className = "action-sources";
+        actionData.sources.forEach((source, idx) => {
+          const link = document.createElement("a");
+          link.href = source.url;
+          link.target = "_blank";
+          link.rel = "noopener";
+          link.className = "source-link";
+          link.textContent = `[${idx + 1}]`;
+          link.title = source.citation;
+          sourcesSpan.appendChild(link);
+        });
+        item.appendChild(sourcesSpan);
+      }
+
       actionList.appendChild(item);
     });
   } else {
     const empty = document.createElement("div");
     empty.className = "empty-state";
-    empty.textContent = "No public actions listed.";
+    empty.textContent = "No public actions listed for this event.";
     actionList.appendChild(empty);
   }
-  actionsCard.innerHTML = `<h3>${eventTitle}</h3>`;
-  actionsCard.appendChild(actionList);
 
+  actionsCard.appendChild(actionList);
   right.appendChild(actionsCard);
 
+  // PAST EVENT - Media and summaries
   if (past) {
     const bottom = document.createElement("div");
     bottom.className = "past-bottom";
@@ -406,7 +505,7 @@ const buildEventSection = (event, group, actions, media) => {
           const mediaCard = document.createElement("div");
           mediaCard.className = "media-item";
           const title = preferredKeys(item, ["title", "name", "caption"]) || "Media";
-          const url = preferredKeys(item, ["url", "link", "media_url", "video_url"]); 
+          const url = preferredKeys(item, ["media_link", "url", "link", "media_url", "video_url"]);
           mediaCard.innerHTML = `<h4>${title}</h4>`;
           const embed = buildEmbed(url);
           if (embed) {
@@ -508,10 +607,11 @@ const snapScroll = (sections) => {
 };
 
 const init = async () => {
-  const [events, groups, actions, media] = await Promise.all([
+  const [events, groups, eventActions, actionTypes, media] = await Promise.all([
     fetchCSV(DATA_FILES.events),
     fetchCSV(DATA_FILES.groups),
-    fetchCSV(DATA_FILES.actions),
+    fetchCSV(DATA_FILES.eventActions),
+    fetchCSV(DATA_FILES.actionTypes),
     fetchCSV(DATA_FILES.media),
   ]);
 
@@ -521,6 +621,8 @@ const init = async () => {
   }
 
   const groupsById = mapBy(groups, ["group_id", "id", "groupid"]);
+  const eventActionsMap = groupBy(eventActions, ["event_id", "eventid"]);
+  const actionTypesMap = mapBy(actionTypes, ["action_type_id"]);
 
   const sortedEvents = events
     .map((event) => ({
@@ -542,7 +644,7 @@ const init = async () => {
   const sections = sortedEvents.map((event) => {
     const groupId = preferredKeys(event, ["group_id", "groupid"]);
     const group = groupId ? groupsById.get(groupId) : null;
-    return buildEventSection(event, group, actions, media);
+    return buildEventSection(event, group, eventActionsMap, actionTypesMap, media);
   });
 
   sections.forEach((section) => timeline.appendChild(section));
